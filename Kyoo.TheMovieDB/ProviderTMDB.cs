@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Kyoo.Controllers;
@@ -55,7 +54,7 @@ namespace Kyoo.TheMovieDB
 			TMDbClient client = new TMDbClient(APIKey);
 			if (show.IsMovie)
 			{
-				Movie movie = await client.GetMovieAsync(id, MovieMethods.Images | MovieMethods.AlternativeTitles);
+				Movie movie = await client.GetMovieAsync(id, MovieMethods.AlternativeTitles);
 				Show ret = new Show(Utility.ToSlug(movie.Title),
 					movie.Title,
 					movie.AlternativeTitles.Titles.Select(x => x.Title),
@@ -66,12 +65,10 @@ namespace Kyoo.TheMovieDB
 					Status.Finished,
 					movie.ReleaseDate?.Year,
 					movie.ReleaseDate?.Year,
-					movie.Images.Posters?.OrderByDescending(x => x.VoteAverage).ThenByDescending(x => x.VoteCount)
-						.Select(x => "https://image.tmdb.org/t/p/original/" + x.FilePath).FirstOrDefault(),
+					"https://image.tmdb.org/t/p/original/" + movie.PosterPath,
 					null,
 					null,
-					movie.Images.Backdrops?.OrderByDescending(x => x.VoteAverage).ThenByDescending(x => x.VoteCount)
-						.Select(x => "https://image.tmdb.org/t/p/original/" + x.FilePath).FirstOrDefault(),
+					"https://image.tmdb.org/t/p/original/" + movie.BackdropPath,
 					$"{((IMetadataProvider) this).Name}={id}");
 				ret.Genres = movie.Genres.Select(x => new Genre(x.Name));
 				ret.Studio = new Studio(movie.ProductionCompanies.FirstOrDefault()?.Name);
@@ -79,7 +76,7 @@ namespace Kyoo.TheMovieDB
 			}
 			else
 			{
-				TvShow tv = await client.GetTvShowAsync(int.Parse(id), TvShowMethods.Images | TvShowMethods.AlternativeTitles);
+				TvShow tv = await client.GetTvShowAsync(int.Parse(id), TvShowMethods.AlternativeTitles);
 				Show ret = new Show(Utility.ToSlug(tv.Name),
 					tv.Name,
 					tv.AlternativeTitles.Results.Select(x => x.Title),
@@ -87,13 +84,13 @@ namespace Kyoo.TheMovieDB
 					tv.Overview,
 					tv.Videos?.Results.Where(x => (x.Type == "Trailer" || x.Type == "Teaser") && x.Site == "Youtube")
 						.Select(x => "https://www.youtube.com/watch?v=" + x.Key).FirstOrDefault(),
-					tv.Status == "Finished" ? Status.Finished : Status.Airing,
+					tv.Status == "Ended" ? Status.Finished : Status.Airing,
 					tv.FirstAirDate?.Year,
 					tv.LastAirDate?.Year,
-					tv.PosterPath,
+					"https://image.tmdb.org/t/p/original/" + tv.PosterPath,
 					null,
 					null,
-					tv.BackdropPath,
+					"https://image.tmdb.org/t/p/original/" + tv.BackdropPath,
 					$"{((IMetadataProvider) this).Name}={id}");
 				ret.Genres = tv.Genres.Select(x => new Genre(x.Name));
 				ret.Studio = new Studio(tv.ProductionCompanies.FirstOrDefault()?.Name);
@@ -111,17 +108,17 @@ namespace Kyoo.TheMovieDB
 			{
 				Credits credits = await client.GetMovieCreditsAsync(int.Parse(id));
 				return credits.Cast.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Character, "Actor", x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}"))
+						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Character, "Actor", "https://image.tmdb.org/t/p/original/" + x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}"))
 					.Concat(credits.Crew.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Job, x.Department, x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}")));
+						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Job, x.Department, "https://image.tmdb.org/t/p/original/" + x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}")));
 			}
 			else
 			{
 				TvCredits credits = await client.GetTvShowCreditsAsync(int.Parse(id));
 				return credits.Cast.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Character, "Actor", x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}"))
+						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Character, "Actor", "https://image.tmdb.org/t/p/original/" + x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}"))
 					.Concat(credits.Crew.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Job, x.Department, x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}")));
+						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Job, x.Department, "https://image.tmdb.org/t/p/original/" + x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}")));
 			}
 		}
 
@@ -137,7 +134,7 @@ namespace Kyoo.TheMovieDB
 				season.Name,
 				season.Overview,
 				season.AirDate?.Year,
-				season.PosterPath,
+				"https://image.tmdb.org/t/p/original/" + season.PosterPath,
 				$"{((IMetadataProvider)this).Name}={season.Id}");
 		}
 
@@ -153,7 +150,7 @@ namespace Kyoo.TheMovieDB
 				episode.Overview,
 				episode.AirDate,
 				0,
-				episode.StillPath,
+				"https://image.tmdb.org/t/p/original/" + episode.StillPath,
 				$"{((IMetadataProvider)this).Name}={episode.Id}");
 		}
 	}
