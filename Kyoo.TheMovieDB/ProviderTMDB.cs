@@ -9,6 +9,8 @@ using TMDbLib.Objects.General;
 using TMDbLib.Objects.Movies;
 using TMDbLib.Objects.Search;
 using TMDbLib.Objects.TvShows;
+using Credits = TMDbLib.Objects.Movies.Credits;
+using TvCredits = TMDbLib.Objects.TvShows.Credits;
 using Genre = Kyoo.Models.Genre;
 
 namespace Kyoo.TheMovieDB
@@ -53,7 +55,7 @@ namespace Kyoo.TheMovieDB
 			TMDbClient client = new TMDbClient(APIKey);
 			if (show.IsMovie)
 			{
-				Movie movie = await client.GetMovieAsync(id, MovieMethods.Credits | MovieMethods.Images | MovieMethods.AlternativeTitles);
+				Movie movie = await client.GetMovieAsync(id, MovieMethods.Images | MovieMethods.AlternativeTitles);
 				Show ret = new Show(Utility.ToSlug(movie.Title),
 					movie.Title,
 					movie.AlternativeTitles.Titles.Select(x => x.Title),
@@ -77,7 +79,7 @@ namespace Kyoo.TheMovieDB
 			}
 			else
 			{
-				TvShow tv = await client.GetTvShowAsync(int.Parse(id), TvShowMethods.Credits | TvShowMethods.Images | TvShowMethods.AlternativeTitles);
+				TvShow tv = await client.GetTvShowAsync(int.Parse(id), TvShowMethods.Images | TvShowMethods.AlternativeTitles);
 				Show ret = new Show(Utility.ToSlug(tv.Name),
 					tv.Name,
 					tv.AlternativeTitles.Results.Select(x => x.Title),
@@ -101,7 +103,26 @@ namespace Kyoo.TheMovieDB
 
 		public async Task<IEnumerable<PeopleLink>> GetPeople(Show show)
 		{
-			throw new NotImplementedException();
+			string id = show?.GetID(((IMetadataProvider) this).Name);
+			if (id == null)
+				return await Task.FromResult<IEnumerable<PeopleLink>>(null);
+			TMDbClient client = new TMDbClient(APIKey);
+			if (show.IsMovie)
+			{
+				Credits credits = await client.GetMovieCreditsAsync(int.Parse(id));
+				return credits.Cast.Select(x =>
+						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Character, "Actor", x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}"))
+					.Concat(credits.Crew.Select(x =>
+						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Job, x.Department, x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}")));
+			}
+			else
+			{
+				TvCredits credits = await client.GetTvShowCreditsAsync(int.Parse(id));
+				return credits.Cast.Select(x =>
+						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Character, "Actor", x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}"))
+					.Concat(credits.Crew.Select(x =>
+						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Job, x.Department, x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}")));
+			}
 		}
 
 		public async Task<Season> GetSeason(Show show, long seasonNumber)
