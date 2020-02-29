@@ -2,11 +2,12 @@
 
     <PropertyGroup>
         <TargetFramework>netcoreapp3.0</TargetFramework>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Kyoo.Common" Version="1.0.10" />
-      <PackageReference Include="TMDbLib.Core2" Version="1.0.0" />
+      <PackageReference Include="Kyoo.Common" Version="1.0.12" />
+      <PackageReference Include="TMDbLib" Version="1.4.0" />
     </ItemGroup>
 
 </Project>

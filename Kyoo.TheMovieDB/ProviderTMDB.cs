@@ -8,74 +8,110 @@ using TMDbLib.Client;
 using TMDbLib.Objects.General;
 using TMDbLib.Objects.Movies;
 using TMDbLib.Objects.Search;
+using TMDbLib.Objects.TvShows;
+using Genre = Kyoo.Models.Genre;
 
 namespace Kyoo.TheMovieDB
 {
-    public class NoResultFound : Exception {}
-    
-    public class TheMovieDBProvider : IMetadataProvider, IPlugin
-    {
-        string IMetadataProvider.Name => "TheMovieDB";
+	public class TheMovieDBProvider : IMetadataProvider, IPlugin
+	{
+		string IMetadataProvider.Name => "TheMovieDB";
 
-        string IPlugin.Name => "TheMovieDB Provider";
+		string IPlugin.Name => "TheMovieDB Provider";
 
-        private const string APIKey = "c9f328a01011b28f22483717395fc3fa";
+		private const string APIKey = "c9f328a01011b28f22483717395fc3fa";
 
-        public async Task<Collection> GetCollectionFromName(string name)
-        {
-            return await Task.FromResult<Collection>(null);
-        }
+		public async Task<Collection> GetCollectionFromName(string name)
+		{
+			return await Task.FromResult<Collection>(null);
+		}
 
-        public async Task<Show> GetShowFromName(string showName, bool isMovie)
-        {
-            TMDbClient client = new TMDbClient(APIKey);
-            if (isMovie)
-            {
-                SearchContainer<SearchMovie> search = await client.SearchMovieAsync(showName);
-                if (search.Results.Count == 0)
-                    throw new NoResultFound();
-                return await GetShowByID(search.Results[0].Id.ToString());
-            }
+		public async Task<Show> GetShowFromName(string showName, bool isMovie)
+		{
+			TMDbClient client = new TMDbClient(APIKey);
+			if (isMovie)
+			{
+				SearchContainer<SearchMovie> search = await client.SearchMovieAsync(showName);
+				if (search.Results.Count == 0)
+					return null;
+				return await GetShowByID(new Show { ExternalIDs = $"{((IMetadataProvider)this).Name}={search.Results[0].Id}" });
+			}
+			else
+			{
+				SearchContainer<SearchTv> search = await client.SearchTvShowAsync(showName);
+				if (search.Results.Count == 0)
+					return null;
+				return await GetShowByID(new Show { ExternalIDs = $"{((IMetadataProvider)this).Name}={search.Results[0].Id}" });
+			}
+		}
+		
+		public async Task<Show> GetShowByID(Show show)
+		{
+			string id = show?.GetID(((IMetadataProvider) this).Name);
+			if (id == null)
+				return await Task.FromResult<Show>(null);
+			TMDbClient client = new TMDbClient(APIKey);
+			if (show.IsMovie)
+			{
+				Movie movie = await client.GetMovieAsync(id, MovieMethods.Credits | MovieMethods.Images | MovieMethods.AlternativeTitles);
+				Show ret = new Show(Utility.ToSlug(movie.Title),
+					movie.Title,
+					movie.AlternativeTitles.Titles.Select(x => x.Title),
+					null,
+					movie.Overview,
+					movie.Videos?.Results.Where(x => (x.Type == "Trailer" || x.Type == "Teaser") && x.Site == "Youtube")
+						.Select(x => "https://www.youtube.com/watch?v=" + x.Key).FirstOrDefault(),
+					Status.Finished,
+					movie.ReleaseDate?.Year,
+					movie.ReleaseDate?.Year,
+					movie.Images.Posters?.OrderByDescending(x => x.VoteAverage).ThenByDescending(x => x.VoteCount)
+						.Select(x => "https://image.tmdb.org/t/p/original/" + x.FilePath).FirstOrDefault(),
+					null,
+					null,
+					movie.Images.Backdrops?.OrderByDescending(x => x.VoteAverage).ThenByDescending(x => x.VoteCount)
+						.Select(x => "https://image.tmdb.org/t/p/original/" + x.FilePath).FirstOrDefault(),
+					$"{((IMetadataProvider) this).Name}={id}");
+				ret.Genres = movie.Genres.Select(x => new Genre(x.Name));
+				ret.Studio = new Studio(movie.ProductionCompanies.FirstOrDefault()?.Name);
+				return ret;
+			}
+			else
+			{
+				TvShow tv = await client.GetTvShowAsync(int.Parse(id), TvShowMethods.Credits | TvShowMethods.Images | TvShowMethods.AlternativeTitles);
+				Show ret = new Show(Utility.ToSlug(tv.Name),
+					tv.Name,
+					tv.AlternativeTitles.Results.Select(x => x.Title),
+					null,
+					tv.Overview,
+					tv.Videos?.Results.Where(x => (x.Type == "Trailer" || x.Type == "Teaser") && x.Site == "Youtube")
+						.Select(x => "https://www.youtube.com/watch?v=" + x.Key).FirstOrDefault(),
+					tv.Status == "Finished" ? Status.Finished : Status.Airing,
+					tv.FirstAirDate?.Year,
+					tv.LastAirDate?.Year,
+					tv.PosterPath,
+					null,
+					null,
+					tv.BackdropPath,
+					$"{((IMetadataProvider) this).Name}={id}");
+				ret.Genres = tv.Genres.Select(x => new Genre(x.Name));
+				ret.Studio = new Studio(tv.ProductionCompanies.FirstOrDefault()?.Name);
+				return ret;
+			}
+		}
 
-            return null;
-        }
-        
-        public async Task<Show> GetShowByID(string id)
-        {
-	        TMDbClient client = new TMDbClient(APIKey);
-	        Movie movie = await client.GetMovieAsync(id, MovieMethods.Credits | MovieMethods.Images | MovieMethods.AlternativeTitles);
-	        return new Show(Utility.ToSlug(movie.Title),
-		        movie.Title,
-		        movie.AlternativeTitles.Titles.Select(x => x.Title),
-		        null,
-		        movie.Overview,
-		        movie.Videos?.Results.Where(x => (x.Type == "Trailer" || x.Type == "Teaser") && x.Site == "Youtube")
-			        .Select(x => "https://www.youtube.com/watch?v=" + x.Key).FirstOrDefault(),
-		        Status.Finished,
-		        startYear: movie.ReleaseDate?.Year,
-		        movie.ReleaseDate?.Year,
-		        movie.Images.Posters?.OrderByDescending(x => x.VoteAverage).ThenByDescending(x => x.VoteCount)
-			        .Select(x => "https://image.tmdb.org/t/p/original/" + x.FilePath).FirstOrDefault(),
-		        null,
-		        null,
-		         movie.Images.Backdrops?.OrderByDescending(x => x.VoteAverage).ThenByDescending(x => x.VoteCount)
-			         .Select(x => "https://image.tmdb.org/t/p/original/" + x.FilePath).FirstOrDefault(),
-		        $"{((IMetadataProvider)this).Name}={id}");
-        }
+		public async Task<IEnumerable<PeopleLink>> GetPeople(Show show)
+		{
+			throw new NotImplementedException();
+		}
 
-        public async Task<IEnumerable<PeopleLink>> GetPeople(Show show)
-        {
-            throw new NotImplementedException();
-        }
+		public async Task<Season> GetSeason(Show show, long seasonNumber)
+		{
+			throw new NotImplementedException();
+		}
 
-        public async Task<Season> GetSeason(Show show, long seasonNumber)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<Episode> GetEpisode(Show show, long seasonNumber, long episodeNumber, long absoluteNumber)
-        {
-            throw new NotImplementedException();
-        }
-    }
+		public async Task<Episode> GetEpisode(Show show, long seasonNumber, long episodeNumber, long absoluteNumber)
+		{
+			throw new NotImplementedException();
+		}
+	}
 }
