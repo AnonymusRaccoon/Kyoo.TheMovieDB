@@ -127,7 +127,18 @@ namespace Kyoo.TheMovieDB
 
 		public async Task<Season> GetSeason(Show show, long seasonNumber)
 		{
-			throw new NotImplementedException();
+			string id = show?.GetID(((IMetadataProvider) this).Name);
+			if (id == null)
+				return await Task.FromResult<Season>(null);
+			TMDbClient client = new TMDbClient(APIKey);
+			TvSeason season = await client.GetTvSeasonAsync(int.Parse(id), seasonNumber);
+			return new Season(show.ID,
+				seasonNumber,
+				season.Name,
+				season.Overview,
+				season.AirDate?.Year,
+				season.PosterPath,
+				$"{((IMetadataProvider)this).Name}={season.Id}");
 		}
 
 		public async Task<Episode> GetEpisode(Show show, long seasonNumber, long episodeNumber, long absoluteNumber)
