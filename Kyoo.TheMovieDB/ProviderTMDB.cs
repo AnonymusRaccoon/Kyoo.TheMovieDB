@@ -35,7 +35,7 @@ namespace Kyoo.TheMovieDB
 				SearchContainer<SearchMovie> search = await client.SearchMovieAsync(showName);
 				if (search.Results.Count == 0)
 					return null;
-				return await GetShowByID(new Show { ExternalIDs = $"{((IMetadataProvider)this).Name}={search.Results[0].Id}" });
+				return await GetShowByID(new Show { IsMovie = true, ExternalIDs = $"{((IMetadataProvider)this).Name}={search.Results[0].Id}" });
 			}
 			else
 			{
@@ -104,9 +104,9 @@ namespace Kyoo.TheMovieDB
 
 		public async Task<IEnumerable<PeopleLink>> GetPeople(Show show)
 		{
-			string id = show?.GetID(((IMetadataProvider) this).Name);
+			string id = show?.GetID(((IMetadataProvider)this).Name);
 			if (id == null)
-				return await Task.FromResult<IEnumerable<PeopleLink>>(null);
+				return await Task.FromResult(new List<PeopleLink>());
 			TMDbClient client = new TMDbClient(APIKey);
 			if (show.IsMovie)
 			{
