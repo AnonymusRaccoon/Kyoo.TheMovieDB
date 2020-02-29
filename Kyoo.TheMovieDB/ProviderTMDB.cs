@@ -55,6 +55,8 @@ namespace Kyoo.TheMovieDB
 			if (show.IsMovie)
 			{
 				Movie movie = await client.GetMovieAsync(id, MovieMethods.AlternativeTitles);
+				if (movie == null)
+					return null;
 				Show ret = new Show(Utility.ToSlug(movie.Title),
 					movie.Title,
 					movie.AlternativeTitles.Titles.Select(x => x.Title),
@@ -65,10 +67,10 @@ namespace Kyoo.TheMovieDB
 					Status.Finished,
 					movie.ReleaseDate?.Year,
 					movie.ReleaseDate?.Year,
-					"https://image.tmdb.org/t/p/original/" + movie.PosterPath,
+					"https://image.tmdb.org/t/p/original" + movie.PosterPath,
 					null,
 					null,
-					"https://image.tmdb.org/t/p/original/" + movie.BackdropPath,
+					"https://image.tmdb.org/t/p/original" + movie.BackdropPath,
 					$"{((IMetadataProvider) this).Name}={id}");
 				ret.Genres = movie.Genres.Select(x => new Genre(x.Name));
 				ret.Studio = new Studio(movie.ProductionCompanies.FirstOrDefault()?.Name);
@@ -77,6 +79,8 @@ namespace Kyoo.TheMovieDB
 			else
 			{
 				TvShow tv = await client.GetTvShowAsync(int.Parse(id), TvShowMethods.AlternativeTitles);
+				if (tv == null)
+					return null;
 				Show ret = new Show(Utility.ToSlug(tv.Name),
 					tv.Name,
 					tv.AlternativeTitles.Results.Select(x => x.Title),
@@ -87,10 +91,10 @@ namespace Kyoo.TheMovieDB
 					tv.Status == "Ended" ? Status.Finished : Status.Airing,
 					tv.FirstAirDate?.Year,
 					tv.LastAirDate?.Year,
-					"https://image.tmdb.org/t/p/original/" + tv.PosterPath,
+					"https://image.tmdb.org/t/p/original" + tv.PosterPath,
 					null,
 					null,
-					"https://image.tmdb.org/t/p/original/" + tv.BackdropPath,
+					"https://image.tmdb.org/t/p/original" + tv.BackdropPath,
 					$"{((IMetadataProvider) this).Name}={id}");
 				ret.Genres = tv.Genres.Select(x => new Genre(x.Name));
 				ret.Studio = new Studio(tv.ProductionCompanies.FirstOrDefault()?.Name);
@@ -108,17 +112,17 @@ namespace Kyoo.TheMovieDB
 			{
 				Credits credits = await client.GetMovieCreditsAsync(int.Parse(id));
 				return credits.Cast.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Character, "Actor", "https://image.tmdb.org/t/p/original/" + x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}"))
+						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Character, "Actor", "https://image.tmdb.org/t/p/original" + x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}"))
 					.Concat(credits.Crew.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Job, x.Department, "https://image.tmdb.org/t/p/original/" + x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}")));
+						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Job, x.Department, "https://image.tmdb.org/t/p/original" + x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}")));
 			}
 			else
 			{
 				TvCredits credits = await client.GetTvShowCreditsAsync(int.Parse(id));
 				return credits.Cast.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Character, "Actor", "https://image.tmdb.org/t/p/original/" + x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}"))
+						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Character, "Actor", "https://image.tmdb.org/t/p/original" + x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}"))
 					.Concat(credits.Crew.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Job, x.Department, "https://image.tmdb.org/t/p/original/" + x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}")));
+						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Job, x.Department, "https://image.tmdb.org/t/p/original" + x.ProfilePath, $"{((IMetadataProvider) this).Name}={x.Id}")));
 			}
 		}
 
@@ -129,12 +133,14 @@ namespace Kyoo.TheMovieDB
 				return await Task.FromResult<Season>(null);
 			TMDbClient client = new TMDbClient(APIKey);
 			TvSeason season = await client.GetTvSeasonAsync(int.Parse(id), (int)seasonNumber);
+			if (season == null)
+				return null;
 			return new Season(show.ID,
 				seasonNumber,
 				season.Name,
 				season.Overview,
 				season.AirDate?.Year,
-				"https://image.tmdb.org/t/p/original/" + season.PosterPath,
+				"https://image.tmdb.org/t/p/original" + season.PosterPath,
 				$"{((IMetadataProvider)this).Name}={season.Id}");
 		}
 
@@ -145,12 +151,14 @@ namespace Kyoo.TheMovieDB
 				return await Task.FromResult<Episode>(null);
 			TMDbClient client = new TMDbClient(APIKey);
 			TvEpisode episode = await client.GetTvEpisodeAsync(int.Parse(id), (int)seasonNumber, (int)episodeNumber);
+			if (episode == null)
+				return null;
 			return new Episode(seasonNumber, episodeNumber, absoluteNumber,
 				episode.Name,
 				episode.Overview,
 				episode.AirDate,
 				0,
-				"https://image.tmdb.org/t/p/original/" + episode.StillPath,
+				"https://image.tmdb.org/t/p/original" + episode.StillPath,
 				$"{((IMetadataProvider)this).Name}={episode.Id}");
 		}
 	}
