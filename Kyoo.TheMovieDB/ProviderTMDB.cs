@@ -54,7 +54,7 @@ namespace Kyoo.TheMovieDB
 			TMDbClient client = new TMDbClient(APIKey);
 			if (show.IsMovie)
 			{
-				Movie movie = await client.GetMovieAsync(id, MovieMethods.AlternativeTitles);
+				Movie movie = await client.GetMovieAsync(id, MovieMethods.AlternativeTitles | MovieMethods.Videos);
 				if (movie == null)
 					return null;
 				Show ret = new Show(Utility.ToSlug(movie.Title),
@@ -62,7 +62,7 @@ namespace Kyoo.TheMovieDB
 					movie.AlternativeTitles.Titles.Select(x => x.Title),
 					null,
 					movie.Overview,
-					movie.Videos?.Results.Where(x => (x.Type == "Trailer" || x.Type == "Teaser") && x.Site == "Youtube")
+					movie.Videos?.Results.Where(x => (x.Type == "Trailer" || x.Type == "Teaser") && x.Site == "YouTube")
 						.Select(x => "https://www.youtube.com/watch?v=" + x.Key).FirstOrDefault(),
 					Status.Finished,
 					movie.ReleaseDate?.Year,
@@ -78,7 +78,7 @@ namespace Kyoo.TheMovieDB
 			}
 			else
 			{
-				TvShow tv = await client.GetTvShowAsync(int.Parse(id), TvShowMethods.AlternativeTitles);
+				TvShow tv = await client.GetTvShowAsync(int.Parse(id), TvShowMethods.AlternativeTitles | TvShowMethods.Videos);
 				if (tv == null)
 					return null;
 				Show ret = new Show(Utility.ToSlug(tv.Name),
@@ -86,7 +86,7 @@ namespace Kyoo.TheMovieDB
 					tv.AlternativeTitles.Results.Select(x => x.Title),
 					null,
 					tv.Overview,
-					tv.Videos?.Results.Where(x => (x.Type == "Trailer" || x.Type == "Teaser") && x.Site == "Youtube")
+					tv.Videos?.Results.Where(x => (x.Type == "Trailer" || x.Type == "Teaser") && x.Site == "YouTube")
 						.Select(x => "https://www.youtube.com/watch?v=" + x.Key).FirstOrDefault(),
 					tv.Status == "Ended" ? Status.Finished : Status.Airing,
 					tv.FirstAirDate?.Year,
