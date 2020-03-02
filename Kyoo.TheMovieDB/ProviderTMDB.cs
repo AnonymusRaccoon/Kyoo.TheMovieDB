@@ -146,6 +146,9 @@ namespace Kyoo.TheMovieDB
 
 		public async Task<Episode> GetEpisode(Show show, long seasonNumber, long episodeNumber, long absoluteNumber)
 		{
+			if (seasonNumber == -1 || episodeNumber == -1)
+				return await Task.FromResult<Episode>(null);
+			
 			string id = show?.GetID(((IMetadataProvider) this).Name);
 			if (id == null)
 				return await Task.FromResult<Episode>(null);
