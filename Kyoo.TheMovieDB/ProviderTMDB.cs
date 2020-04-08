@@ -19,6 +19,7 @@ namespace Kyoo.TheMovieDB
 		string IMetadataProvider.Name => "TheMovieDB";
 
 		string IPlugin.Name => "TheMovieDB Provider";
+		public IEnumerable<ITask> Tasks => null;
 
 		private const string APIKey = "c9f328a01011b28f22483717395fc3fa";
 
