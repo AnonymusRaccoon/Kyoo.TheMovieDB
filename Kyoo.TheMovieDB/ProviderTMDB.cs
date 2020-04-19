@@ -23,27 +23,34 @@ namespace Kyoo.TheMovieDB
 
 		private const string APIKey = "c9f328a01011b28f22483717395fc3fa";
 
+
 		public async Task<Collection> GetCollectionFromName(string name)
 		{
 			return await Task.FromResult<Collection>(null);
 		}
 
-		public async Task<Show> GetShowFromName(string showName, bool isMovie)
+		public async Task<IEnumerable<Show>> SearchShows(string showName, bool isMovie)
 		{
 			TMDbClient client = new TMDbClient(APIKey);
 			if (isMovie)
 			{
 				SearchContainer<SearchMovie> search = await client.SearchMovieAsync(showName);
-				if (search.Results.Count == 0)
-					return null;
-				return await GetShowByID(new Show { IsMovie = true, ExternalIDs = $"{((IMetadataProvider)this).Name}={search.Results[0].Id}" });
+				return search.Results.Select(x =>
+				{
+					Show show = x.ToShow();
+					show.ExternalIDs = $"{((IMetadataProvider)this).Name}={x.Id}"; 
+					return show;
+				});
 			}
 			else
 			{
 				SearchContainer<SearchTv> search = await client.SearchTvShowAsync(showName);
-				if (search.Results.Count == 0)
-					return null;
-				return await GetShowByID(new Show { ExternalIDs = $"{((IMetadataProvider)this).Name}={search.Results[0].Id}" });
+				return search.Results.Select(x =>
+				{
+					Show show = x.ToShow();
+					show.ExternalIDs = $"{((IMetadataProvider)this).Name}={x.Id}"; 
+					return show;
+				});
 			}
 		}
 		
@@ -58,23 +65,8 @@ namespace Kyoo.TheMovieDB
 				Movie movie = await client.GetMovieAsync(id, MovieMethods.AlternativeTitles | MovieMethods.Videos);
 				if (movie == null)
 					return null;
-				Show ret = new Show(Utility.ToSlug(movie.Title),
-					movie.Title,
-					movie.AlternativeTitles.Titles.Select(x => x.Title),
-					null,
-					movie.Overview,
-					movie.Videos?.Results.Where(x => (x.Type == "Trailer" || x.Type == "Teaser") && x.Site == "YouTube")
-						.Select(x => "https://www.youtube.com/watch?v=" + x.Key).FirstOrDefault(),
-					Status.Finished,
-					movie.ReleaseDate?.Year,
-					movie.ReleaseDate?.Year,
-					movie.PosterPath != null ? "https://image.tmdb.org/t/p/original" + movie.PosterPath : null,
-					null,
-					null,
-					movie.BackdropPath != null ? "https://image.tmdb.org/t/p/original" + movie.BackdropPath : null,
-					$"{((IMetadataProvider) this).Name}={id}");
-				ret.Genres = movie.Genres.Select(x => new Genre(x.Name));
-				ret.Studio = new Studio(movie.ProductionCompanies.FirstOrDefault()?.Name);
+				Show ret = movie.ToShow();
+				ret.ExternalIDs = $"{((IMetadataProvider)this).Name}={id}";
 				return ret;
 			}
 			else
@@ -82,23 +74,8 @@ namespace Kyoo.TheMovieDB
 				TvShow tv = await client.GetTvShowAsync(int.Parse(id), TvShowMethods.AlternativeTitles | TvShowMethods.Videos);
 				if (tv == null)
 					return null;
-				Show ret = new Show(Utility.ToSlug(tv.Name),
-					tv.Name,
-					tv.AlternativeTitles.Results.Select(x => x.Title),
-					null,
-					tv.Overview,
-					tv.Videos?.Results.Where(x => (x.Type == "Trailer" || x.Type == "Teaser") && x.Site == "YouTube")
-						.Select(x => "https://www.youtube.com/watch?v=" + x.Key).FirstOrDefault(),
-					tv.Status == "Ended" ? Status.Finished : Status.Airing,
-					tv.FirstAirDate?.Year,
-					tv.LastAirDate?.Year,
-					tv.PosterPath != null ? "https://image.tmdb.org/t/p/original" + tv.PosterPath : null,
-					null,
-					null,
-					tv.BackdropPath != null ? "https://image.tmdb.org/t/p/original" + tv.BackdropPath : null,
-					$"{((IMetadataProvider) this).Name}={id}");
-				ret.Genres = tv.Genres.Select(x => new Genre(x.Name));
-				ret.Studio = new Studio(tv.ProductionCompanies.FirstOrDefault()?.Name);
+				Show ret = tv.ToShow();
+				ret.ExternalIDs = $"{((IMetadataProvider)this).Name}={id}";
 				return ret;
 			}
 		}
@@ -164,6 +141,99 @@ namespace Kyoo.TheMovieDB
 				0,
 				episode.StillPath != null ? "https://image.tmdb.org/t/p/original" + episode.StillPath : null,
 				$"{((IMetadataProvider)this).Name}={episode.Id}");
+		}
+	}
+	
+	public static class Convertors
+	{
+		public static Show ToShow(this Movie movie)
+		{
+			return new Show(Utility.ToSlug(movie.Title),
+				movie.Title,
+				movie.AlternativeTitles.Titles.Select(x => x.Title),
+				null,
+				movie.Overview,
+				movie.Videos?.Results.Where(x => (x.Type == "Trailer" || x.Type == "Teaser") && x.Site == "YouTube")
+					.Select(x => "https://www.youtube.com/watch?v=" + x.Key).FirstOrDefault(),
+				Status.Finished,
+				movie.ReleaseDate?.Year,
+				movie.ReleaseDate?.Year,
+				movie.PosterPath != null ? "https://image.tmdb.org/t/p/original" + movie.PosterPath : null,
+				null,
+				null,
+				movie.BackdropPath != null ? "https://image.tmdb.org/t/p/original" + movie.BackdropPath : null,
+				null)
+			{
+				Genres = movie.Genres.Select(x => new Genre(x.Name)),
+				Studio = new Studio(movie.ProductionCompanies.FirstOrDefault()?.Name),
+				IsMovie = true
+			};
+		}
+
+		public static Show ToShow(this TvShow tv)
+		{
+			return new Show(Utility.ToSlug(tv.Name),
+				tv.Name,
+				tv.AlternativeTitles.Results.Select(x => x.Title),
+				null,
+				tv.Overview,
+				tv.Videos?.Results.Where(x => (x.Type == "Trailer" || x.Type == "Teaser") && x.Site == "YouTube")
+					.Select(x => "https://www.youtube.com/watch?v=" + x.Key).FirstOrDefault(),
+				tv.Status == "Ended" ? Status.Finished : Status.Airing,
+				tv.FirstAirDate?.Year,
+				tv.LastAirDate?.Year,
+				tv.PosterPath != null ? "https://image.tmdb.org/t/p/original" + tv.PosterPath : null,
+				null,
+				null,
+				tv.BackdropPath != null ? "https://image.tmdb.org/t/p/original" + tv.BackdropPath : null,
+				null)
+			{
+				Genres = tv.Genres.Select(x => new Genre(x.Name)),
+				Studio = new Studio(tv.ProductionCompanies.FirstOrDefault()?.Name),
+				IsMovie = false
+			};
+		}
+
+		public static Show ToShow(this SearchMovie movie)
+		{
+			return new Show(Utility.ToSlug(movie.Title),
+				movie.Title,
+				null,
+				null,
+				movie.Overview,
+				null,
+				Status.Finished,
+				movie.ReleaseDate?.Year,
+				movie.ReleaseDate?.Year,
+				movie.PosterPath != null ? "https://image.tmdb.org/t/p/original" + movie.PosterPath : null,
+				null,
+				null,
+				movie.BackdropPath != null ? "https://image.tmdb.org/t/p/original" + movie.BackdropPath : null,
+				null)
+			{
+				IsMovie = true
+			};
+		}
+		
+		public static Show ToShow(this SearchTv tv)
+		{
+			return new Show(Utility.ToSlug(tv.Name),
+				tv.Name,
+				null,
+				null,
+				tv.Overview,
+				null,
+				Status.Finished,
+				tv.FirstAirDate?.Year,
+				null,
+				tv.PosterPath != null ? "https://image.tmdb.org/t/p/original" + tv.PosterPath : null,
+				null,
+				null,
+				tv.BackdropPath != null ? "https://image.tmdb.org/t/p/original" + tv.BackdropPath : null,
+				null)
+			{
+				IsMovie = false
+			};
 		}
 	}
 }
