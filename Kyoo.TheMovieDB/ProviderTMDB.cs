@@ -16,10 +16,15 @@ namespace Kyoo.TheMovieDB
 {
 	public class TheMovieDBProvider : IMetadataProvider, IPlugin
 	{
-		string IMetadataProvider.Name => "TheMovieDB";
-
 		string IPlugin.Name => "TheMovieDB Provider";
 		public IEnumerable<ITask> Tasks => null;
+
+		private readonly ProviderID _provider = new ProviderID
+		{
+			Name = "TheMovieDB",
+			Logo = "https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg"
+		};
+		public ProviderID Provider => _provider;
 
 		private const string APIKey = "c9f328a01011b28f22483717395fc3fa";
 
@@ -38,7 +43,7 @@ namespace Kyoo.TheMovieDB
 				return search.Results.Select(x =>
 				{
 					Show show = x.ToShow();
-					show.ExternalIDs = $"{((IMetadataProvider)this).Name}={x.Id}"; 
+					show.ExternalIDs = new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/movie/{x.Id}")}; 
 					return show;
 				});
 			}
@@ -48,7 +53,7 @@ namespace Kyoo.TheMovieDB
 				return search.Results.Select(x =>
 				{
 					Show show = x.ToShow();
-					show.ExternalIDs = $"{((IMetadataProvider)this).Name}={x.Id}"; 
+					show.ExternalIDs = new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/tv/{x.Id}")}; 
 					return show;
 				});
 			}
@@ -56,7 +61,7 @@ namespace Kyoo.TheMovieDB
 		
 		public async Task<Show> GetShowByID(Show show)
 		{
-			string id = show?.GetID(((IMetadataProvider) this).Name);
+			string id = show?.GetID(Provider.Name);
 			if (id == null)
 				return await Task.FromResult<Show>(null);
 			TMDbClient client = new TMDbClient(APIKey);
@@ -66,7 +71,7 @@ namespace Kyoo.TheMovieDB
 				if (movie == null)
 					return null;
 				Show ret = movie.ToShow();
-				ret.ExternalIDs = $"{((IMetadataProvider)this).Name}={id}";
+				ret.ExternalIDs = new[] {new MetadataID(Provider, $"{movie.Id}", $"https://www.themoviedb.org/movie/{movie.Id}")}; 
 				return ret;
 			}
 			else
@@ -75,14 +80,14 @@ namespace Kyoo.TheMovieDB
 				if (tv == null)
 					return null;
 				Show ret = tv.ToShow();
-				ret.ExternalIDs = $"{((IMetadataProvider)this).Name}={id}";
+				ret.ExternalIDs = new[] {new MetadataID(Provider, $"{tv.Id}", $"https://www.themoviedb.org/tv/{tv.Id}")}; 
 				return ret;
 			}
 		}
 
 		public async Task<IEnumerable<PeopleLink>> GetPeople(Show show)
 		{
-			string id = show?.GetID(((IMetadataProvider)this).Name);
+			string id = show?.GetID(Provider.Name);
 			if (id == null)
 				return await Task.FromResult(new List<PeopleLink>());
 			TMDbClient client = new TMDbClient(APIKey);
@@ -90,23 +95,43 @@ namespace Kyoo.TheMovieDB
 			{
 				Credits credits = await client.GetMovieCreditsAsync(int.Parse(id));
 				return credits.Cast.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Character, "Actor", x.ProfilePath != null ? "https://image.tmdb.org/t/p/original" + x.ProfilePath : null, $"{((IMetadataProvider) this).Name}={x.Id}"))
-					.Concat(credits.Crew.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Job, x.Department, x.ProfilePath != null ? "https://image.tmdb.org/t/p/original" + x.ProfilePath : null, $"{((IMetadataProvider) this).Name}={x.Id}")));
+					new PeopleLink(Utility.ToSlug(x.Name),
+							x.Name,
+							x.Character,
+							"Actor",
+							x.ProfilePath != null ? "https://image.tmdb.org/t/p/original" + x.ProfilePath : null,
+							new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/person/{x.Id}")}))
+						.Concat(credits.Crew.Select(x =>
+							new PeopleLink(Utility.ToSlug(x.Name),
+								x.Name,
+								x.Job,
+								x.Department,
+								x.ProfilePath != null ? "https://image.tmdb.org/t/p/original" + x.ProfilePath : null,
+								new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/person/{x.Id}")})));
 			}
 			else
 			{
 				TvCredits credits = await client.GetTvShowCreditsAsync(int.Parse(id));
 				return credits.Cast.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Character, "Actor", x.ProfilePath != null ? "https://image.tmdb.org/t/p/original" + x.ProfilePath : null, $"{((IMetadataProvider) this).Name}={x.Id}"))
+						new PeopleLink(Utility.ToSlug(x.Name),
+							x.Name, 
+							x.Character, 
+							"Actor", 
+							x.ProfilePath != null ? "https://image.tmdb.org/t/p/original" + x.ProfilePath : null, 
+							new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/person/{x.Id}")}))
 					.Concat(credits.Crew.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name), x.Name, x.Job, x.Department, x.ProfilePath != null ? "https://image.tmdb.org/t/p/original" + x.ProfilePath : null, $"{((IMetadataProvider) this).Name}={x.Id}")));
+						new PeopleLink(Utility.ToSlug(x.Name),
+							x.Name, 
+							x.Job, 
+							x.Department, 
+							x.ProfilePath != null ? "https://image.tmdb.org/t/p/original" + x.ProfilePath : null, 
+							new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/person/{x.Id}")})));
 			}
 		}
 
 		public async Task<Season> GetSeason(Show show, long seasonNumber)
 		{
-			string id = show?.GetID(((IMetadataProvider) this).Name);
+			string id = show?.GetID(Provider.Name);
 			if (id == null)
 				return await Task.FromResult<Season>(null);
 			TMDbClient client = new TMDbClient(APIKey);
@@ -119,7 +144,7 @@ namespace Kyoo.TheMovieDB
 				season.Overview,
 				season.AirDate?.Year,
 				season.PosterPath != null ? "https://image.tmdb.org/t/p/original" + season.PosterPath : null,
-				$"{((IMetadataProvider)this).Name}={season.Id}");
+				new[] {new MetadataID(Provider, $"{season.Id}", $"https://www.themoviedb.org/tv/{id}/season/{season.SeasonNumber}")});
 		}
 
 		public async Task<Episode> GetEpisode(Show show, long seasonNumber, long episodeNumber, long absoluteNumber)
@@ -127,7 +152,7 @@ namespace Kyoo.TheMovieDB
 			if (seasonNumber == -1 || episodeNumber == -1)
 				return await Task.FromResult<Episode>(null);
 			
-			string id = show?.GetID(((IMetadataProvider) this).Name);
+			string id = show?.GetID(Provider.Name);
 			if (id == null)
 				return await Task.FromResult<Episode>(null);
 			TMDbClient client = new TMDbClient(APIKey);
@@ -140,7 +165,7 @@ namespace Kyoo.TheMovieDB
 				episode.AirDate,
 				0,
 				episode.StillPath != null ? "https://image.tmdb.org/t/p/original" + episode.StillPath : null,
-				$"{((IMetadataProvider)this).Name}={episode.Id}");
+				new[] {new MetadataID(Provider, $"{episode.Id}", $"https://www.themoviedb.org/tv/{id}/season/{episode.SeasonNumber}/episode/{episode.EpisodeNumber}")});
 		}
 	}
 	
