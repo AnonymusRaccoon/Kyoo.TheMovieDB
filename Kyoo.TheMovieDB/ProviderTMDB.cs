@@ -185,7 +185,6 @@ namespace Kyoo.TheMovieDB
 				movie.ReleaseDate?.Year,
 				movie.PosterPath != null ? "https://image.tmdb.org/t/p/original" + movie.PosterPath : null,
 				null,
-				null,
 				movie.BackdropPath != null ? "https://image.tmdb.org/t/p/original" + movie.BackdropPath : null,
 				null)
 			{
@@ -209,7 +208,6 @@ namespace Kyoo.TheMovieDB
 				tv.LastAirDate?.Year,
 				tv.PosterPath != null ? "https://image.tmdb.org/t/p/original" + tv.PosterPath : null,
 				null,
-				null,
 				tv.BackdropPath != null ? "https://image.tmdb.org/t/p/original" + tv.BackdropPath : null,
 				null)
 			{
@@ -232,7 +230,6 @@ namespace Kyoo.TheMovieDB
 				movie.ReleaseDate?.Year,
 				movie.PosterPath != null ? "https://image.tmdb.org/t/p/original" + movie.PosterPath : null,
 				null,
-				null,
 				movie.BackdropPath != null ? "https://image.tmdb.org/t/p/original" + movie.BackdropPath : null,
 				null)
 			{
@@ -252,7 +249,6 @@ namespace Kyoo.TheMovieDB
 				tv.FirstAirDate?.Year,
 				null,
 				tv.PosterPath != null ? "https://image.tmdb.org/t/p/original" + tv.PosterPath : null,
-				null,
 				null,
 				tv.BackdropPath != null ? "https://image.tmdb.org/t/p/original" + tv.BackdropPath : null,
 				null)
