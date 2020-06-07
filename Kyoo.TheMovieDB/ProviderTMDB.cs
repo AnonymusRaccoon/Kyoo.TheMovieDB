@@ -129,13 +129,13 @@ namespace Kyoo.TheMovieDB
 			}
 		}
 
-		public async Task<Season> GetSeason(Show show, long seasonNumber)
+		public async Task<Season> GetSeason(Show show, int seasonNumber)
 		{
 			string id = show?.GetID(Provider.Name);
 			if (id == null)
 				return await Task.FromResult<Season>(null);
 			TMDbClient client = new TMDbClient(APIKey);
-			TvSeason season = await client.GetTvSeasonAsync(int.Parse(id), (int)seasonNumber);
+			TvSeason season = await client.GetTvSeasonAsync(int.Parse(id), seasonNumber);
 			if (season == null)
 				return null;
 			return new Season(show.ID,
@@ -147,7 +147,7 @@ namespace Kyoo.TheMovieDB
 				new[] {new MetadataID(Provider, $"{season.Id}", $"https://www.themoviedb.org/tv/{id}/season/{season.SeasonNumber}")});
 		}
 
-		public async Task<Episode> GetEpisode(Show show, long seasonNumber, long episodeNumber, long absoluteNumber)
+		public async Task<Episode> GetEpisode(Show show, int seasonNumber, int episodeNumber, int absoluteNumber)
 		{
 			if (seasonNumber == -1 || episodeNumber == -1)
 				return await Task.FromResult<Episode>(null);
@@ -156,7 +156,7 @@ namespace Kyoo.TheMovieDB
 			if (id == null)
 				return await Task.FromResult<Episode>(null);
 			TMDbClient client = new TMDbClient(APIKey);
-			TvEpisode episode = await client.GetTvEpisodeAsync(int.Parse(id), (int)seasonNumber, (int)episodeNumber);
+			TvEpisode episode = await client.GetTvEpisodeAsync(int.Parse(id), seasonNumber, episodeNumber);
 			if (episode == null)
 				return null;
 			return new Episode(seasonNumber, episodeNumber, absoluteNumber,
