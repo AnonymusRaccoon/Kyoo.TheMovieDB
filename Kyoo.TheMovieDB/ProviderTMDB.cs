@@ -21,6 +21,7 @@ namespace Kyoo.TheMovieDB
 
 		private readonly ProviderID _provider = new ProviderID
 		{
+			Slug = "the-moviedb",
 			Name = "TheMovieDB",
 			Logo = "https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg"
 		};
@@ -85,24 +86,24 @@ namespace Kyoo.TheMovieDB
 			}
 		}
 
-		public async Task<IEnumerable<PeopleLink>> GetPeople(Show show)
+		public async Task<IEnumerable<PeopleRole>> GetPeople(Show show)
 		{
 			string id = show?.GetID(Provider.Name);
 			if (id == null)
-				return await Task.FromResult(new List<PeopleLink>());
+				return await Task.FromResult(new List<PeopleRole>());
 			TMDbClient client = new TMDbClient(APIKey);
 			if (show.IsMovie)
 			{
 				Credits credits = await client.GetMovieCreditsAsync(int.Parse(id));
 				return credits.Cast.Select(x =>
-					new PeopleLink(Utility.ToSlug(x.Name),
+					new PeopleRole(Utility.ToSlug(x.Name),
 							x.Name,
 							x.Character,
 							"Actor",
 							x.ProfilePath != null ? "https://image.tmdb.org/t/p/original" + x.ProfilePath : null,
 							new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/person/{x.Id}")}))
 						.Concat(credits.Crew.Select(x =>
-							new PeopleLink(Utility.ToSlug(x.Name),
+							new PeopleRole(Utility.ToSlug(x.Name),
 								x.Name,
 								x.Job,
 								x.Department,
@@ -113,14 +114,14 @@ namespace Kyoo.TheMovieDB
 			{
 				TvCredits credits = await client.GetTvShowCreditsAsync(int.Parse(id));
 				return credits.Cast.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name),
+						new PeopleRole(Utility.ToSlug(x.Name),
 							x.Name, 
 							x.Character, 
 							"Actor", 
 							x.ProfilePath != null ? "https://image.tmdb.org/t/p/original" + x.ProfilePath : null, 
 							new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/person/{x.Id}")}))
 					.Concat(credits.Crew.Select(x =>
-						new PeopleLink(Utility.ToSlug(x.Name),
+						new PeopleRole(Utility.ToSlug(x.Name),
 							x.Name, 
 							x.Job, 
 							x.Department, 
