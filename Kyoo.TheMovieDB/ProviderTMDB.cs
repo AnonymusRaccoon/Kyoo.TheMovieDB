@@ -190,7 +190,9 @@ namespace Kyoo.TheMovieDB
 				null)
 			{
 				Genres = movie.Genres.Select(x => new Genre(x.Name)),
-				Studio = new Studio(movie.ProductionCompanies.FirstOrDefault()?.Name),
+				Studio = string.IsNullOrEmpty(movie.ProductionCompanies.FirstOrDefault()?.Name)
+					? null
+					: new Studio(movie.ProductionCompanies.First().Name),
 				IsMovie = true
 			};
 		}
@@ -213,7 +215,9 @@ namespace Kyoo.TheMovieDB
 				null)
 			{
 				Genres = tv.Genres.Select(x => new Genre(x.Name)),
-				Studio = new Studio(tv.ProductionCompanies.FirstOrDefault()?.Name),
+				Studio = string.IsNullOrEmpty(tv.ProductionCompanies.FirstOrDefault()?.Name)
+					? null
+					: new Studio(tv.ProductionCompanies.First().Name),
 				IsMovie = false
 			};
 		}
