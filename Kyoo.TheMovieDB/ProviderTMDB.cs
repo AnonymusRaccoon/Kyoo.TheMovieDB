@@ -37,7 +37,7 @@ namespace Kyoo.TheMovieDB
 
 		public async Task<IEnumerable<Show>> SearchShows(string showName, bool isMovie)
 		{
-			TMDbClient client = new TMDbClient(APIKey);
+			TMDbClient client = new(APIKey);
 			if (isMovie)
 			{
 				SearchContainer<SearchMovie> search = await client.SearchMovieAsync(showName);
@@ -166,7 +166,10 @@ namespace Kyoo.TheMovieDB
 				episode.AirDate,
 				0,
 				episode.StillPath != null ? "https://image.tmdb.org/t/p/original" + episode.StillPath : null,
-				new[] {new MetadataID(Provider, $"{episode.Id}", $"https://www.themoviedb.org/tv/{id}/season/{episode.SeasonNumber}/episode/{episode.EpisodeNumber}")});
+				new []
+				{
+					new MetadataID(Provider, $"{episode.Id}", $"https://www.themoviedb.org/tv/{id}/season/{episode.SeasonNumber}/episode/{episode.EpisodeNumber}")
+				});
 		}
 	}
 	
