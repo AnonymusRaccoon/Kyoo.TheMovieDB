@@ -10,7 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Kyoo.Common" Version="1.0.22" />
+      <PackageReference Include="Kyoo.Common" Version="1.0.25" />
       <PackageReference Include="TMDbLib" Version="1.4.0" />
     </ItemGroup>
 

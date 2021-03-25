@@ -17,12 +17,13 @@ namespace Kyoo.TheMovieDB
 	public class TheMovieDBProvider : IMetadataProvider, IPlugin
 	{
 		string IPlugin.Name => "TheMovieDB Provider";
-		public IEnumerable<ITask> Tasks => null;
+		public ICollection<ITask> Tasks => null;
 
-		private readonly ProviderID _provider = new ProviderID
+		private readonly ProviderID _provider = new()
 		{
 			Slug = "the-moviedb",
 			Name = "TheMovieDB",
+			LogoExtension = "svg",
 			Logo = "https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg"
 		};
 		public ProviderID Provider => _provider;
@@ -35,7 +36,7 @@ namespace Kyoo.TheMovieDB
 			return await Task.FromResult<Collection>(null);
 		}
 
-		public async Task<IEnumerable<Show>> SearchShows(string showName, bool isMovie)
+		public async Task<ICollection<Show>> SearchShows(string showName, bool isMovie)
 		{
 			TMDbClient client = new(APIKey);
 			if (isMovie)
@@ -46,7 +47,7 @@ namespace Kyoo.TheMovieDB
 					Show show = x.ToShow();
 					show.ExternalIDs = new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/movie/{x.Id}")}; 
 					return show;
-				});
+				}).ToArray();
 			}
 			else
 			{
@@ -56,7 +57,7 @@ namespace Kyoo.TheMovieDB
 					Show show = x.ToShow();
 					show.ExternalIDs = new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/tv/{x.Id}")}; 
 					return show;
-				});
+				}).ToArray();
 			}
 		}
 		
@@ -65,7 +66,7 @@ namespace Kyoo.TheMovieDB
 			string id = show?.GetID(Provider.Name);
 			if (id == null)
 				return await Task.FromResult<Show>(null);
-			TMDbClient client = new TMDbClient(APIKey);
+			TMDbClient client = new(APIKey);
 			if (show.IsMovie)
 			{
 				Movie movie = await client.GetMovieAsync(id, MovieMethods.AlternativeTitles | MovieMethods.Videos);
@@ -86,12 +87,12 @@ namespace Kyoo.TheMovieDB
 			}
 		}
 
-		public async Task<IEnumerable<PeopleRole>> GetPeople(Show show)
+		public async Task<ICollection<PeopleRole>> GetPeople(Show show)
 		{
 			string id = show?.GetID(Provider.Name);
 			if (id == null)
 				return await Task.FromResult(new List<PeopleRole>());
-			TMDbClient client = new TMDbClient(APIKey);
+			TMDbClient client = new(APIKey);
 			if (show.IsMovie)
 			{
 				Credits credits = await client.GetMovieCreditsAsync(int.Parse(id));
@@ -108,7 +109,8 @@ namespace Kyoo.TheMovieDB
 								x.Job,
 								x.Department,
 								x.ProfilePath != null ? "https://image.tmdb.org/t/p/original" + x.ProfilePath : null,
-								new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/person/{x.Id}")})));
+								new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/person/{x.Id}")})))
+						.ToArray();
 			}
 			else
 			{
@@ -126,7 +128,8 @@ namespace Kyoo.TheMovieDB
 							x.Job, 
 							x.Department, 
 							x.ProfilePath != null ? "https://image.tmdb.org/t/p/original" + x.ProfilePath : null, 
-							new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/person/{x.Id}")})));
+							new[] {new MetadataID(Provider, $"{x.Id}", $"https://www.themoviedb.org/person/{x.Id}")})))
+					.ToArray();
 			}
 		}
 
@@ -156,7 +159,7 @@ namespace Kyoo.TheMovieDB
 			string id = show?.GetID(Provider.Name);
 			if (id == null)
 				return await Task.FromResult<Episode>(null);
-			TMDbClient client = new TMDbClient(APIKey);
+			TMDbClient client = new(APIKey);
 			TvEpisode episode = await client.GetTvEpisodeAsync(int.Parse(id), seasonNumber, episodeNumber);
 			if (episode == null)
 				return null;
@@ -192,7 +195,7 @@ namespace Kyoo.TheMovieDB
 				movie.BackdropPath != null ? "https://image.tmdb.org/t/p/original" + movie.BackdropPath : null,
 				null)
 			{
-				Genres = movie.Genres.Select(x => new Genre(x.Name)),
+				Genres = movie.Genres.Select(x => new Genre(x.Name)).ToArray(),
 				Studio = string.IsNullOrEmpty(movie.ProductionCompanies.FirstOrDefault()?.Name)
 					? null
 					: new Studio(movie.ProductionCompanies.First().Name),
@@ -217,7 +220,7 @@ namespace Kyoo.TheMovieDB
 				tv.BackdropPath != null ? "https://image.tmdb.org/t/p/original" + tv.BackdropPath : null,
 				null)
 			{
-				Genres = tv.Genres.Select(x => new Genre(x.Name)),
+				Genres = tv.Genres.Select(x => new Genre(x.Name)).ToArray(),
 				Studio = string.IsNullOrEmpty(tv.ProductionCompanies.FirstOrDefault()?.Name)
 					? null
 					: new Studio(tv.ProductionCompanies.First().Name),
